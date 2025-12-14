@@ -103,3 +103,16 @@ sys_trace(void)
   trace_enabled = enable;
   return 0;
 }
+
+int
+sys_getprocs(void)
+{
+  return getprocs();
+}
+
+int
+sys_proclist(void)
+{
+  proclist();
+  return 0;
+}

@@ -532,3 +532,44 @@ procdump(void)
     cprintf("\n");
   }
 }
+int
+getprocs(void)
+{
+  struct proc *p;
+  int count = 0;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != UNUSED && p->state != ZOMBIE)
+      count++;
+  }
+  release(&ptable.lock);
+  return count;
+}
+
+void
+proclist(void)
+{
+  static char *states[] = {
+  [UNUSED]    "unused   ",
+  [EMBRYO]    "embryo   ",
+  [SLEEPING]  "sleeping ",
+  [RUNNABLE]  "runnable ",
+  [RUNNING]   "running  ",
+  [ZOMBIE]    "zombie   "
+  };
+  struct proc *p;
+  char *state;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == UNUSED)
+      continue;
+    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+      state = states[p->state];
+    else
+      state = "???      ";
+    cprintf("%d    %s  %s\n", p->pid, state, p->name);
+  }
+  release(&ptable.lock);
+}
