@@ -7,6 +7,8 @@
 #include "x86.h"
 #include "syscall.h"
 
+int trace_enabled = 0;
+
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
@@ -103,6 +105,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
+extern int sys_trace(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -126,17 +129,121 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_trace]   sys_trace,
+};
+
+static char *syscall_names[] = {
+[SYS_fork]    "fork",
+[SYS_exit]    "exit",
+[SYS_wait]    "wait",
+[SYS_pipe]    "pipe",
+[SYS_read]    "read",
+[SYS_kill]    "kill",
+[SYS_exec]    "exec",
+[SYS_fstat]   "fstat",
+[SYS_chdir]   "chdir",
+[SYS_dup]     "dup",
+[SYS_getpid]  "getpid",
+[SYS_sbrk]    "sbrk",
+[SYS_sleep]   "sleep",
+[SYS_uptime]  "uptime",
+[SYS_open]    "open",
+[SYS_write]   "write",
+[SYS_mknod]   "mknod",
+[SYS_unlink]  "unlink",
+[SYS_link]    "link",
+[SYS_mkdir]   "mkdir",
+[SYS_close]   "close",
+[SYS_trace]   "trace",
 };
 
 void
 syscall(void)
 {
   int num;
+  int ret;
+  int should_trace;
   struct proc *curproc = myproc();
 
   num = curproc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    curproc->tf->eax = syscalls[num]();
+    should_trace = (trace_enabled && num != SYS_write);
+    
+    if(should_trace) {
+      cprintf("[%d] %s -> %s(", curproc->pid, curproc->name, syscall_names[num]);
+    
+    if(num == SYS_fork || num == SYS_wait || num == SYS_getpid || 
+       num == SYS_uptime) {
+      cprintf(")");
+    }
+    else if(num == SYS_exit) {
+      cprintf(")");
+    }
+    else if(num == SYS_kill || num == SYS_dup || num == SYS_close || 
+            num == SYS_sleep || num == SYS_chdir || num == SYS_unlink) {
+      int arg = 0;
+      argint(0, &arg);
+      cprintf("%d)", arg);
+    }
+    else if(num == SYS_pipe) {
+      int arg = 0;
+      argint(0, &arg);
+      cprintf("0x%x)", arg);
+    }
+    else if(num == SYS_read || num == SYS_write || num == SYS_fstat) {
+      int fd = 0, arg2 = 0, arg3 = 0;
+      argint(0, &fd);
+      argint(1, &arg2);
+      argint(2, &arg3);
+      cprintf("%d, 0x%x, %d)", fd, arg2, arg3);
+    }
+    else if(num == SYS_open) {
+      char *path = 0;
+      int mode = 0;
+      argstr(0, &path);
+      argint(1, &mode);
+      cprintf("\"%s\", %d)", path ? path : "", mode);
+    }
+    else if(num == SYS_exec) {
+      char *path = 0;
+      argstr(0, &path);
+      cprintf("\"%s\", ...)", path ? path : "");
+    }
+    else if(num == SYS_sbrk) {
+      int n = 0;
+      argint(0, &n);
+      cprintf("%d)", n);
+    }
+    else if(num == SYS_mknod) {
+      char *path = 0;
+      int major = 0, minor = 0;
+      argstr(0, &path);
+      argint(1, &major);
+      argint(2, &minor);
+      cprintf("\"%s\", %d, %d)", path ? path : "", major, minor);
+    }
+    else if(num == SYS_link) {
+      int arg1 = 0, arg2 = 0;
+      argint(0, &arg1);
+      argint(1, &arg2);
+      cprintf("%d, %d)", arg1, arg2);
+    }
+    else if(num == SYS_mkdir) {
+      char *path = 0;
+      argstr(0, &path);
+      cprintf("\"%s\")", path ? path : "");
+    }
+    else {
+      cprintf("...)");
+    }
+    }
+    
+    ret = syscalls[num]();
+    curproc->tf->eax = ret;
+    
+    if(should_trace) {
+      cprintf(" = %d\n", ret);
+    }
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             curproc->pid, curproc->name, num);

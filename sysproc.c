@@ -7,6 +7,8 @@
 #include "mmu.h"
 #include "proc.h"
 
+extern int trace_enabled;
+
 int
 sys_fork(void)
 {
@@ -88,4 +90,16 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+int
+sys_trace(void)
+{
+  int enable;
+
+  if(argint(0, &enable) < 0)
+    return -1;
+
+  trace_enabled = enable;
+  return 0;
 }
