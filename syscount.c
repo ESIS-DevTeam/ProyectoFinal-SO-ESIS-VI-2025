@@ -32,11 +32,36 @@ char *syscall_names[] = {
 };
 
 int
+find_syscall_by_name(char *name)
+{
+  int i;
+  for(i = 1; i < 26; i++) {
+    if(strcmp(syscall_names[i], name) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int
 main(int argc, char *argv[])
 {
   if(argc == 2) {
-    // Mostrar contador de un syscall específico
-    int syscall_num = atoi(argv[1]);
+    // Mostrar contador de un syscall específico (por número o nombre)
+    int syscall_num;
+    
+    // Intentar interpretar como número
+    syscall_num = atoi(argv[1]);
+    
+    // Si es 0 y el primer carácter no es '0', entonces es un nombre
+    if(syscall_num == 0 && argv[1][0] != '0') {
+      syscall_num = find_syscall_by_name(argv[1]);
+      if(syscall_num < 0) {
+        printf(2, "syscount: syscall '%s' no encontrada\n", argv[1]);
+        exit();
+      }
+    }
+    
     if(syscall_num < 0 || syscall_num > 25) {
       printf(2, "syscount: numero de syscall invalido (0-25)\n");
       exit();
