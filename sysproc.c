@@ -8,6 +8,7 @@
 #include "proc.h"
 
 extern int trace_enabled;
+extern int syscall_counts[26];
 
 int
 sys_fork(void)
@@ -115,4 +116,33 @@ sys_proclist(void)
 {
   proclist();
   return 0;
+}
+
+int
+sys_syscount(void)
+{
+  int syscall_num;
+  int *count_ptr;
+
+  if(argint(0, &syscall_num) < 0)
+    return -1;
+
+  // Si syscall_num == -1, copiar todos los contadores al segundo argumento
+  if(syscall_num == -1) {
+    if(argptr(1, (void*)&count_ptr, sizeof(int)*26) < 0)
+      return -1;
+    
+    int i;
+    for(i = 0; i < 26; i++) {
+      count_ptr[i] = syscall_counts[i];
+    }
+    return 0;
+  }
+  
+  // Si no, retornar el contador del syscall específico
+  if(syscall_num >= 0 && syscall_num < 26) {
+    return syscall_counts[syscall_num];
+  }
+  
+  return -1;
 }

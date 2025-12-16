@@ -23,3 +23,4 @@
 #define SYS_trace 22
 #define SYS_getprocs 23
 #define SYS_proclist 24
+#define SYS_syscount 25

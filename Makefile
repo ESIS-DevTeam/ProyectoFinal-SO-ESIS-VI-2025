@@ -185,6 +185,7 @@ UPROGS=\
 	_uptime\
 	_ps\
 	_lsx\
+	_syscount\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

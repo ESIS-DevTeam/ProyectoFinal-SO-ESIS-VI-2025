@@ -26,6 +26,7 @@ int uptime(void);
 int trace(int);
 int getprocs(void);
 void proclist(void);
+int syscount(int, ...);
 
 // ulib.c
 int stat(const char*, struct stat*);

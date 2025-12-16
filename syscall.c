@@ -8,6 +8,7 @@
 #include "syscall.h"
 
 int trace_enabled = 0;
+int syscall_counts[26];  // Contador de invocaciones por syscall
 
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
@@ -108,6 +109,7 @@ extern int sys_uptime(void);
 extern int sys_trace(void);
 extern int sys_getprocs(void);
 extern int sys_proclist(void);
+extern int sys_syscount(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -134,6 +136,7 @@ static int (*syscalls[])(void) = {
 [SYS_trace]   sys_trace,
 [SYS_getprocs] sys_getprocs,
 [SYS_proclist] sys_proclist,
+[SYS_syscount] sys_syscount,
 };
 
 static char *syscall_names[] = {
@@ -244,6 +247,7 @@ syscall(void)
     }
     }
     
+    syscall_counts[num]++;  // Incrementar contador de invocaciones
     ret = syscalls[num]();
     curproc->tf->eax = ret;
     
